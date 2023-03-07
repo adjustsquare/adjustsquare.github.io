@@ -29,9 +29,9 @@
             </div>
 
             <div>
-              <label for="about" class="block text-sm font-medium leading-6 text-gray-900">About</label>
+              <label for="about" class="block text-sm font-medium leading-6 text-gray-900">Search Box (For Recipe)</label>
               <div class="mt-2">
-                <textarea id="about" name="about" rows="3" class="mt-1 block w-full rounded-md border-0 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:py-1.5 sm:text-sm sm:leading-6" placeholder="you@example.com"></textarea>
+                <textarea id="searchBox" name="searchBox" rows="3" class="mt-1 block w-full rounded-md border-0 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:py-1.5 sm:text-sm sm:leading-6" placeholder="you@example.com"></textarea>
               </div>
               <p class="mt-2 text-sm text-gray-500">Brief description for your profile. URLs are hyperlinked.</p>
             </div>
@@ -236,19 +236,36 @@
     Office.onReady((info) => {
         // Check that we loaded into Excel
         if (info.host === Office.HostType.Excel) {
-            document.getElementById("helloButton").onclick = sayHello;
+            document.getElementById("helloButton").onclick = searchRecipe;
         }
     });
 
-    function sayHello() {
-        Excel.run(context => {
+    function searchRecipe() {
+        // Get the user's input value
+        const searchValue = document.getElementById("searchBox").value;
 
-            // Insert text 'Hello world!' into cell A1.
-            context.workbook.worksheets.getActiveWorksheet().getRange("A1").values = [['Hello world!']];
+        // Make an HTTP request to the API endpoint
+        fetch(`https://www.thecocktaildb.com/api/json/v1/1/search.php?s=${searchValue}`)
+            .then(response => response.json())
+            .then(data => {
+                // Extract the recipe details from the API response
+                const recipe = data.drinks[0];
+                const recipeName = recipe.strDrink;
+                const recipeInstructions = recipe.strInstructions;
 
-            // sync the context to run the previous API call, and return.
-            return context.sync();
-        });
+                // Insert the recipe details into cells A1 and A2
+                Excel.run(context => {
+                    const sheet = context.workbook.worksheets.getActiveWorksheet();
+                    sheet.getRange("A1").values = [[recipeName]];
+                    sheet.getRange("A2").values = [[recipeInstructions]];
+
+                    // Sync the context to run the previous API call, and return.
+                    return context.sync();
+                });
+            })
+            .catch(error => {
+                console.error(error);
+            });
     }
 </script>
 
